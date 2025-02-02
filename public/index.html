@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minecraft Bot Control Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; padding-top: 20px; }
+    .chat-box { border: 1px solid #ccc; padding: 10px; height: 150px; overflow-y: scroll; background-color: #ffffff; }
+    .btn-group-custom button { width: 80px; margin: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4">Minecraft Bot Control Panel</h1>
+    <div class="card mb-4">
+      <div class="card-header">Bot Creation</div>
+      <div class="card-body">
+        <form id="createBotsForm">
+          <div class="mb-3">
+            <label for="botCount" class="form-label">Number of Bots:</label>
+            <input type="number" class="form-control" id="botCount" required>
+          </div>
+          <div class="mb-3">
+            <label for="ip" class="form-label">Server IP:</label>
+            <input type="text" class="form-control" id="ip" required>
+          </div>
+          <div class="mb-3">
+            <label for="port" class="form-label">Server Port:</label>
+            <input type="number" class="form-control" id="port" required>
+          </div>
+          <div class="mb-3">
+            <label for="nickname" class="form-label">Bot Nickname:</label>
+            <input type="text" class="form-control" id="nickname" required>
+          </div>
+          <div class="mb-3">
+            <label for="interval" class="form-label">Connection Interval (seconds):</label>
+            <input type="number" class="form-control" id="interval" required>
+          </div>
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="useProxy">
+            <label class="form-check-label" for="useProxy">Connect via Proxy</label>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Create Bots</button>
+            <button type="button" class="btn btn-secondary" onclick="killBots()">Shut Down Bots</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header">Bot Controls</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Movement Controls:</label>
+          <div class="btn-group btn-group-custom">
+            <button class="btn btn-outline-primary" onclick="moveInCircle()">Circle</button>
+            <button class="btn btn-outline-primary" onclick="moveInSquare()">Square</button>
+            <button class="btn btn-outline-primary" onclick="moveInRectangle()">Rectangle</button>
+          </div>
+          <div class="mt-2">
+            <button class="btn btn-warning" onclick="stopMovement()">Stop Movement</button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="targetPlayer" class="form-label">Target Player:</label>
+          <input type="text" class="form-control" id="targetPlayer">
+          <div class="mt-2">
+            <button class="btn btn-success me-2" onclick="protectPlayer()">Protect Player</button>
+            <button class="btn btn-danger me-2" onclick="attackPlayer()">Attack Player</button>
+            <button class="btn btn-secondary" onclick="stopActions()">Stop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Bot Self-Destruct</span>
+        <button class="btn btn-sm btn-outline-primary" onclick="refreshBotKillList()">Refresh List</button>
+      </div>
+      <div class="card-body">
+        <div id="botKillList"></div>
+        <div class="mt-3">
+          <button class="btn btn-danger" onclick="killSelectedBot()">Destroy</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Chat Log</div>
+      <div class="card-body">
+        <div class="chat-box" id="chatBox"></div>
+        <div class="mt-3">
+          <div class="input-group">
+            <input type="text" class="form-control" id="chatMessage" placeholder="Enter message">
+            <button class="btn btn-secondary" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('createBotsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const botCount = document.getElementById('botCount').value;
+      const ip = document.getElementById('ip').value;
+      const port = document.getElementById('port').value;
+      const nickname = document.getElementById('nickname').value;
+      const interval = document.getElementById('interval').value * 1000;
+      const useProxy = document.getElementById('useProxy').checked;
+      try {
+        const response = await fetch('/createBots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `botCount=${botCount}&ip=${ip}&port=${port}&nickname=${nickname}&interval=${interval}&useProxy=${useProxy}`
+        });
+        alert(await response.text());
+        refreshBotKillList();
+      } catch (error) {
+        console.error('Error creating bots:', error);
+      }
+    });
+
+    async function killBots() {
+      try {
+        const response = await fetch('/killBots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+        refreshBotKillList();
+      } catch (error) {
+        console.error('Error shutting down bots:', error);
+      }
+    }
+
+    async function moveInCircle() {
+      try {
+        const response = await fetch('/moveInCircle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Circle movement error:', error);
+      }
+    }
+    async function moveInSquare() {
+      try {
+        const response = await fetch('/moveInSquare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Square movement error:', error);
+      }
+    }
+    async function moveInRectangle() {
+      try {
+        const response = await fetch('/moveInRectangle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Rectangle movement error:', error);
+      }
+    }
+    async function stopMovement() {
+      try {
+        const response = await fetch('/stopMovement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Stop movement error:', error);
+      }
+    }
+
+    async function protectPlayer() {
+      const targetPlayer = document.getElementById('targetPlayer').value;
+      try {
+        const response = await fetch('/protectPlayer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `targetPlayer=${encodeURIComponent(targetPlayer)}`
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Protection error:', error);
+      }
+    }
+    async function attackPlayer() {
+      const targetPlayer = document.getElementById('targetPlayer').value;
+      try {
+        const response = await fetch('/attackPlayer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `targetPlayer=${encodeURIComponent(targetPlayer)}`
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Attack error:', error);
+      }
+    }
+    async function stopActions() {
+      try {
+        const response = await fetch('/stopActions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        alert(await response.text());
+      } catch (error) {
+        console.error('Stop actions error:', error);
+      }
+    }
+
+    async function refreshBotKillList() {
+      try {
+        const response = await fetch('/bots');
+        const bots = await response.json();
+        const container = document.getElementById('botKillList');
+        container.innerHTML = '';
+        const divAll = document.createElement('div');
+        divAll.className = 'form-check';
+        const radioAll = document.createElement('input');
+        radioAll.className = 'form-check-input';
+        radioAll.type = 'radio';
+        radioAll.name = 'botSelection';
+        radioAll.value = 'ALL';
+        radioAll.id = 'bot_ALL';
+        divAll.appendChild(radioAll);
+        const labelAll = document.createElement('label');
+        labelAll.className = 'form-check-label';
+        labelAll.htmlFor = 'bot_ALL';
+        labelAll.textContent = 'Destroy All';
+        divAll.appendChild(labelAll);
+        container.appendChild(divAll);
+        bots.forEach((botName) => {
+          const divItem = document.createElement('div');
+          divItem.className = 'form-check';
+          const radio = document.createElement('input');
+          radio.className = 'form-check-input';
+          radio.type = 'radio';
+          radio.name = 'botSelection';
+          radio.value = botName;
+          radio.id = 'bot_' + botName;
+          divItem.appendChild(radio);
+          const label = document.createElement('label');
+          label.className = 'form-check-label';
+          label.htmlFor = 'bot_' + botName;
+          label.textContent = botName;
+          divItem.appendChild(label);
+          container.appendChild(divItem);
+        });
+      } catch (error) {
+        console.error('Error fetching bot list:', error);
+      }
+    }
+    
+    async function killSelectedBot() {
+      const radios = document.getElementsByName('botSelection');
+      let selectedValue = null;
+      for (const radio of radios) {
+        if (radio.checked) {
+          selectedValue = radio.value;
+          break;
+        }
+      }
+      if (!selectedValue) {
+        alert('Please select a bot.');
+        return;
+      }
+      if (selectedValue === 'ALL') {
+        try {
+          const res = await fetch('/suicideBots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          });
+          alert(await res.text());
+          refreshBotKillList();
+        } catch (err) {
+          console.error('Error destroying all bots:', err);
+        }
+      } else {
+        try {
+          const res = await fetch('/suicideBot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `username=${encodeURIComponent(selectedValue)}`
+          });
+          alert(await res.text());
+          refreshBotKillList();
+        } catch (err) {
+          console.error('Error destroying bot:', err);
+        }
+      }
+    }
+    
+    window.onload = refreshBotKillList;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
