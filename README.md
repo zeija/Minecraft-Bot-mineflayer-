@@ -7,13 +7,11 @@ Before running the application, install the required modules:
 ```bash
 npm install body-parser express minecraft-protocol mineflayer socks
 
-```css
 After installing the modules, run the server using:
 
 node server.js
 
 Then, open your web browser and visit:
-```anduino
 http://localhost:3000/
 
 Note
